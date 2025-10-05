@@ -271,7 +271,7 @@ for i in range(len(snapshot_dates)):
 
     # Cast column types
     for column, new_type in cs_column_type_map.items():
-        df_all = df_all.withColumn(column, F.col(column).cast(new_type))
+        df = df.withColumn(column, F.col(column).cast(new_type))
 
     # Cumulative file
     if i == 0:
@@ -647,8 +647,6 @@ for column in ['age', 'annual_income', 'monthly_inhand_salary', 'num_bank_accoun
     df_val = df_val.withColumn(column, F.when(F.isnan(F.col(column)), None).otherwise(F.col(column)))
     df_train = df_train.withColumn(column, F.when(F.isnan(F.col(column)), None).otherwise(F.col(column)))
 
-print(df_train.count(), df_val.count(), df_test.count(), df_oot.count())
-
 # Final model-specific feature engineering using only training as source to avoid leakage.
 
 def drop_features(df):
@@ -746,7 +744,6 @@ df_oot = encode_ordinal(df_oot)
 df_test = encode_ordinal(df_test)
 df_val = encode_ordinal(df_val)
 df_train = encode_ordinal(df_train)
-print(df_train.count(), df_val.count(), df_test.count(), df_oot.count())
 
 # Data Scaling
 annual_income_scaler = StandardScaler()
@@ -780,7 +777,6 @@ df_oot = scaling(df_oot)
 df_test = scaling(df_test)
 df_val = scaling(df_val)
 df_train = scaling(df_train)
-print(df_train.count(), df_val.count(), df_test.count(), df_oot.count())
 
 # Drop final identifiers, split X Y, and save
 df_train = df_train.drop('customer_id', 'loan_start_date', 'feature_snapshot_date', 'loan_id', 'label_def', 'label_snapshot_date')
@@ -798,6 +794,7 @@ df_val_Y = df_val.select('label').toPandas()
 df_val_X = df_val.drop('label').toPandas()
 
 # Save
+print("\nSaving Gold Model-Specific Views for Training, Validation, Testing, and OOT:")
 partition_name_X = gold_training_prefix + snapshot_date_str + '_' + str(dpd) + 'dpd_' + str(mob) + 'mob_lr_X.parquet'
 partition_name_Y = gold_training_prefix + snapshot_date_str + '_' + str(dpd) + 'dpd_' + str(mob) + 'mob_lr_Y.parquet'
 df_train_X.to_parquet(gold_training_view + partition_name_X)
@@ -828,12 +825,13 @@ print(f'OOT label set saved to: {gold_oot_view + partition_name_Y}')
 
 
 ########## Print File Structure ##########
+print("\nDatamart File Structure:")
 path = "./datamart/**"
 for file in glob.iglob(path, recursive=True):
     print(file)
 
 ########## Test Training ##########
-
+print("\nTest train a simple logistic regression model...")
 model = LogisticRegression(max_iter=10000, random_state=42)
 model.fit(df_train_X, df_train_Y.values.ravel())
 predictions = model.predict(df_train_X)

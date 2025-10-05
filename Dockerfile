@@ -34,4 +34,4 @@ VOLUME /app
 COPY . .
 
 # CMD ["tail", "-f", "/dev/null"]
-CMD ["jupyter", "lab", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--allow-root", "--notebook-dir=/app"]; echo ["python", "main.py"]
+CMD ["jupyter", "lab", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--allow-root", "--notebook-dir=/app"]
