@@ -18,7 +18,7 @@ import glob
 
 spark = SparkSession.builder \
     .master("local[*]") \
-    .config("spark.executor.memory", "8g") \
+    .config("spark.executor.memory", "10g") \
     .getOrCreate()
 spark.conf.set("spark.sql.autoBroadcastJoinThreshold", -1)
 spark.sparkContext.setLogLevel("ERROR")
