@@ -1,0 +1,7 @@
+jupyterlab==4.4
+numpy==2.3.3
+pandas==2.3.3
+pyspark==4.0.1
+matplotlib==3.10.6
+scikit-learn==1.7.2
+pyarrow==21.0.0

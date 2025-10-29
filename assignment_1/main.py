@@ -649,8 +649,8 @@ for column in ['age', 'annual_income', 'monthly_inhand_salary', 'num_bank_accoun
     df_val = df_val.withColumn(column, F.when(F.isnan(F.col(column)), None).otherwise(F.col(column)))
     df_train = df_train.withColumn(column, F.when(F.isnan(F.col(column)), None).otherwise(F.col(column)))
 
-# Final model-specific feature engineering using only training as source to avoid leakage.
 
+# Final model-specific feature engineering using only training as source to avoid leakage.
 def drop_features(df):
     df = df.drop("customer_id", "loan_start_date", "feature_snapshot_date", "label_snapshot_date", "label_def")
     return df
