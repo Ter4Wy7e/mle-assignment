@@ -10,8 +10,8 @@ from sklearn.model_selection import train_test_split
 
 
 # Logger
-logger = logging.getLogger('ml_pipeline')  # Set the logger name
-handler = logging.FileHandler('/app/ml_pipeline.log')
+logger = logging.getLogger('data_pipeline')  # Set the logger name
+handler = logging.FileHandler('/app/logs/data_pipeline.log')
 formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
 handler.setFormatter(formatter)
 logger.addHandler(handler)
@@ -24,6 +24,7 @@ gold_training_prefix = "gold_train_"
 gold_validation_prefix = "gold_valid_"
 gold_testing_prefix = "gold_test_"
 gold_oot_prefix = "gold_oot_"
+gold_inference_prefix = "gold_inference_"
 
 # Gold file suffixes
 merged_suffix = "_beforeNormalisation"
@@ -117,7 +118,7 @@ def data_processing_gold_feature(ti, **context):
     collapsed_content = ', '.join(content)
     loan_types = re.split(r'[,]\s|and\s', collapsed_content)
     loan_types = set(loan_types)
-    [loan_types.remove(x) for x in ['', 'Unknown', 'Not Specified']]
+    [loan_types.discard(x) for x in ['', 'Unknown', 'Not Specified']]
 
     loan_types = ['Payday Loan', 'Personal Loan', 'Home Equity Loan', 'Credit-Builder Loan', 'Mortgage Loan', 'Student Loan', 'Debt Consolidation Loan', 'Auto Loan']
     for loan_type in loan_types:
@@ -127,6 +128,7 @@ def data_processing_gold_feature(ti, **context):
     # Create new features
     df = df.withColumn("investment_income_ratio", F.when(F.col("monthly_inhand_salary") == 0, 1).otherwise(F.col("amount_invested_monthly") / F.col("monthly_inhand_salary")))
     df = df.withColumn("income_per_card", F.when(F.col("num_credit_card") == 0, F.col("monthly_inhand_salary")).otherwise(F.col("monthly_inhand_salary") / F.col("num_credit_card")))
+    df = df.withColumn("repayment_ability", F.col('monthly_inhand_salary') - F.col('total_emi_per_month'))
 
     # Save
     partition_name = gold_feature_prefix + current_date + '.parquet'
@@ -157,6 +159,7 @@ def data_post_processing(ti, **context):
     gold_validation_view = ti.xcom_pull(task_ids='create_gold_store', key='gold_validation_view')
     gold_testing_view = ti.xcom_pull(task_ids='create_gold_store', key='gold_testing_view')
     gold_oot_view = ti.xcom_pull(task_ids='create_gold_store', key='gold_oot_view')
+    gold_inference_view = ti.xcom_pull(task_ids='create_gold_store', key='gold_inference_view')
 
     # Load Gold filepaths
     gold_label_filepath = ti.xcom_pull(task_ids='data_processing_gold_label', key='gold_label_filepath')
@@ -171,9 +174,18 @@ def data_post_processing(ti, **context):
     # Merge feature and label data. Be careful of time leakage. Feature snapshot date should be equal to loan start date, not label snapshot date.
     df_feature = df_feature.withColumn("feature_snapshot_date", F.col("snapshot_date"))
     df_feature = df_feature.withColumnRenamed("snapshot_date", "loan_start_date")
-    df_merged = df_feature.join(df_label, on=["customer_id", "loan_start_date"], how="inner")
+    df_merged = df_feature.join(df_label, on=["customer_id", "loan_start_date"], how="left")
     df_merged = df_merged.withColumnRenamed("snapshot_date", "label_snapshot_date")
+    df_inference = df_merged.where(F.col('label_snapshot_date').isNull())
+    df_merged = df_merged.where(F.col('label_snapshot_date').isNotNull())
     logger.info(f"[{ti.task_id} | {current_date}] Merged Gold features and labels with {df_merged.count()} rows.")
+
+    # Data split - Inference
+    partition_name = gold_inference_prefix + current_date + merged_suffix + '.parquet'
+    filepath = os.path.join(gold_inference_view, partition_name)
+    df_inference.write.mode("overwrite").parquet(filepath)
+    logger.info(f"[{ti.task_id} | {current_date}] Gold Inference View (Before Normalisation): {df_inference.count()} rows saved to: {filepath}")
+    ti.xcom_push(key='gold_inference_view_before_normalisation', value=filepath)
 
     # Data split - Train, Validation, Test, OOT
     df_oot = df_merged.filter(F.col("label_snapshot_date") == current_date)
@@ -194,25 +206,25 @@ def data_post_processing(ti, **context):
     # Save post-processing merged datasets for next step of data normalisation
     partition_name = gold_training_prefix + current_date + merged_suffix + '.parquet'
     filepath = os.path.join(gold_training_view, partition_name)
-    df_train.to_parquet(filepath)
+    df_train.write.mode("overwrite").parquet(filepath)
     logger.info(f"[{ti.task_id} | {current_date}] Gold Training View (Before Normalisation): {df_train.count()} rows saved to: {filepath}")
     ti.xcom_push(key='gold_training_view_before_normalisation', value=filepath)
     # Validation
     partition_name = gold_validation_prefix + current_date + merged_suffix + '.parquet'
     filepath = os.path.join(gold_validation_view, partition_name)
-    df_val.to_parquet(filepath)
+    df_val.write.mode("overwrite").parquet(filepath)
     logger.info(f"[{ti.task_id} | {current_date}] Gold Validation View (Before Normalisation): {df_val.count()} rows saved to: {filepath}")
     ti.xcom_push(key='gold_validation_view_before_normalisation', value=filepath)
     # Testing
     partition_name = gold_testing_prefix + current_date + merged_suffix + '.parquet'
     filepath = os.path.join(gold_testing_view, partition_name)
-    df_test.to_parquet(filepath)
+    df_test.write.mode("overwrite").parquet(filepath)
     logger.info(f"[{ti.task_id} | {current_date}] Gold Testing View (Before Normalisation): {df_test.count()} rows saved to: {filepath}")
     ti.xcom_push(key='gold_testing_view_before_normalisation', value=filepath)
     # OOT
     partition_name = gold_oot_prefix + current_date + merged_suffix + '.parquet'
     filepath = os.path.join(gold_oot_view, partition_name)
-    df_val.to_parquet(filepath)
+    df_val.write.mode("overwrite").parquet(filepath)
     logger.info(f"[{ti.task_id} | {current_date}] Gold OOT View (Before Normalisation): {df_oot.count()} rows saved to: {filepath}")
     ti.xcom_push(key='gold_oot_view_before_normalisation', value=filepath)
 

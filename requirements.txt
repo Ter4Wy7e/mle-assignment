@@ -1,9 +1,10 @@
 numpy
 pandas
+polars
 pyspark
 matplotlib
 scikit-learn
-pyarrow
+pyarrow==10.0.1
 xgboost
 jupyterlab
 joblib

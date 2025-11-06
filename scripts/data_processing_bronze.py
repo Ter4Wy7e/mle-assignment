@@ -7,8 +7,8 @@ import pyspark.sql.types as T
 
 
 # Logger
-logger = logging.getLogger('ml_pipeline')  # Set the logger name
-handler = logging.FileHandler('/app/ml_pipeline.log')
+logger = logging.getLogger('data_pipeline')  # Set the logger name
+handler = logging.FileHandler('/app/logs/data_pipeline.log')
 formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
 handler.setFormatter(formatter)
 logger.addHandler(handler)

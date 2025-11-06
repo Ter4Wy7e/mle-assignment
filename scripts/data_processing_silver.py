@@ -1,7 +1,8 @@
 import os
 import logging
+import pendulum
 
-from airflow.utils.state import State
+from airflow.models import XCom
 
 from pyspark.sql import SparkSession
 import pyspark.sql.functions as F
@@ -9,8 +10,8 @@ import pyspark.sql.types as T
 
 
 # Logger
-logger = logging.getLogger('ml_pipeline')  # Set the logger name
-handler = logging.FileHandler('/app/ml_pipeline.log')
+logger = logging.getLogger('data_pipeline')  # Set the logger name
+handler = logging.FileHandler('/app/logs/data_pipeline.log')
 formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
 handler.setFormatter(formatter)
 logger.addHandler(handler)
@@ -50,26 +51,33 @@ def data_processing_silver(ti, **context):
     current_date = context['ds']
 
     # Get the previous successful TaskInstance for this task
-    prev_ti = ti.get_previous_ti(state=State.SUCCESS)
-    if prev_ti:
-        silver_lms_prev_filepath = prev_ti.xcom_pull(task_ids="data_processing_silver", key="silver_lms_filepath")
+    silver_lms_prev_filepath = XCom.get_one(execution_date=pendulum.parse(current_date).subtract(months=1), task_id="data_processing_silver", key="silver_lms_filepath")
+    if silver_lms_prev_filepath:
         df_lms_prev = spark.read.parquet(silver_lms_prev_filepath)
         logger.info(f"Loaded Silver LMS from previous run with {df_lms_prev.count()} rows: {silver_lms_prev_filepath}")
+    else:
+        logger.warning(f"[{ti.task_id} | {current_date}] No previous Silver LMS task instance found. Is this the first run?")
 
-        silver_cs_prev_filepath = prev_ti.xcom_pull(task_ids="data_processing_silver", key="silver_cs_filepath")
+    silver_cs_prev_filepath = XCom.get_one(execution_date=pendulum.parse(current_date).subtract(months=1), task_id="data_processing_silver", key="silver_cs_filepath")
+    if silver_cs_prev_filepath:
         df_cs_prev = spark.read.parquet(silver_cs_prev_filepath)
-        logger.info(f"Loaded Silver Clickstream from previous run with {df_cs_prev.count()} rows: {silver_cs_prev_filepath}")\
-        
-        silver_att_prev_filepath = prev_ti.xcom_pull(task_ids="data_processing_silver", key="silver_att_filepath")
+        logger.info(f"Loaded Silver Clickstream from previous run with {df_cs_prev.count()} rows: {silver_cs_prev_filepath}")
+    else:
+        logger.warning(f"[{ti.task_id} | {current_date}] No previous Silver Clickstream task instance found. Is this the first run?")
+    
+    silver_att_prev_filepath = XCom.get_one(execution_date=pendulum.parse(current_date).subtract(months=1), task_id="data_processing_silver", key="silver_att_filepath")
+    if silver_att_prev_filepath:
         df_att_prev = spark.read.parquet(silver_att_prev_filepath)
         logger.info(f"Loaded Silver Attributes from previous run with {df_att_prev.count()}: {silver_att_prev_filepath}")
+    else:
+        logger.warning(f"[{ti.task_id} | {current_date}] No previous task instance found. Is this the first run?")
 
-        silver_fin_prev_filepath = prev_ti.xcom_pull(task_ids="data_processing_silver", key="silver_fin_filepath")
+    silver_fin_prev_filepath = XCom.get_one(execution_date=pendulum.parse(current_date).subtract(months=1), task_id="data_processing_silver", key="silver_fin_filepath")
+    if silver_fin_prev_filepath:
         df_fin_prev = spark.read.parquet(silver_fin_prev_filepath)
         logger.info(f"Loaded Silver Financials from previous run with {df_fin_prev.count()}: {silver_fin_prev_filepath}")
     else:
-        logger.warning("No previous Silver data processing run found. Is this the first run?")
-
+        logger.warning(f"[{ti.task_id} | {current_date}] No previous task instance found. Is this the first run?")
 
     # Attributes
     att_column_type_map = {
@@ -110,7 +118,7 @@ def data_processing_silver(ti, **context):
             logger.info(f"Silver Attributes for {current_date}: {df.filter(df[column].isNull()).count()} null values @ {column} column.")
 
     # Create cumulative dataframe
-    if prev_ti: df_all = df_att_prev.union(df)
+    if silver_att_prev_filepath: df_all = df_att_prev.union(df)
     else: df_all = df
     # Drop duplicates
     ori_count = df_all.count()
@@ -161,7 +169,7 @@ def data_processing_silver(ti, **context):
         df = df.withColumn(column, F.col(column).cast(new_type))
 
     # Create cumulative dataframe
-    if prev_ti: df_all = df_cs_prev.union(df)
+    if silver_cs_prev_filepath: df_all = df_cs_prev.union(df)
     else: df_all = df
     # Drop duplicates
     ori_count = df_all.count()
@@ -233,7 +241,7 @@ def data_processing_silver(ti, **context):
             logger.info(f"Silver Financials for {current_date}: {df.select(column).where(F.col(column).isNull()).count()} null values @ {column} column.")
 
     # Create cumulative dataframe
-    if prev_ti: df_all = df_fin_prev.union(df)
+    if silver_fin_prev_filepath: df_all = df_fin_prev.union(df)
     else: df_all = df
     # Drop duplicates
     ori_count = df_all.count()
@@ -289,7 +297,7 @@ def data_processing_silver(ti, **context):
     df = df.withColumn("dpd", F.when(F.col("overdue_amt") > 0.0, F.datediff(F.col("snapshot_date"), F.col("first_missed_date"))).otherwise(0).cast(T.IntegerType()))
 
     # Create cumulative dataframe
-    if prev_ti: df_all = df_lms_prev.union(df)
+    if silver_lms_prev_filepath: df_all = df_lms_prev.union(df)
     else: df_all = df
 
     # Write cumulative datafile

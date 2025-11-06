@@ -3,8 +3,8 @@ import logging
 
 
 # Logger
-logger = logging.getLogger('ml_pipeline')  # Set the logger name
-handler = logging.FileHandler('/app/ml_pipeline.log')
+logger = logging.getLogger('data_pipeline')  # Set the logger name
+handler = logging.FileHandler('/app/data_pipeline.log')
 formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
 handler.setFormatter(formatter)
 logger.addHandler(handler)
@@ -31,6 +31,7 @@ gold_training_view = "gold/train_view/"
 gold_validation_view = "gold/validation_view/"
 gold_testing_view = "gold/test_view/"
 gold_oot_view = "gold/oot_view/"
+gold_inference_view = "gold/inference_view/"
 
 # Model Bank Configurations
 model_bank_directory = "/app/model_bank"
@@ -85,7 +86,8 @@ def create_gold_store(ti):
         "gold_training_view": os.path.join(datamart_directory, gold_training_view),
         "gold_validation_view": os.path.join(datamart_directory, gold_validation_view),
         "gold_testing_view": os.path.join(datamart_directory, gold_testing_view),
-        "gold_oot_view": os.path.join(datamart_directory, gold_oot_view)
+        "gold_oot_view": os.path.join(datamart_directory, gold_oot_view),
+        "gold_inference_view": os.path.join(datamart_directory, gold_inference_view)
     }
     for label, path in gold_store.items():
         if not os.path.exists(path):
@@ -93,7 +95,7 @@ def create_gold_store(ti):
             logger.info(f"Created directory for {label}: {path}")
         else:
             logger.info(f"Directory for {label} already exists: {path}")
-        ti.xcom_push(key=label, value=os.path.join(datamart_directory, path))
+        ti.xcom_push(key=label, value=path)
 
 def create_model_bank(ti, **context):
     current_date = context['ds']
