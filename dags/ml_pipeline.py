@@ -5,6 +5,7 @@ from airflow.operators.empty import EmptyOperator
 from airflow.operators.bash import BashOperator
 from airflow.models import Variable
 
+import os
 import pandas as pd
 import numpy as np
 
@@ -34,8 +35,8 @@ ml_pipeline = DAG(
     dag_id='ml_pipeline',
     default_args=default_args,
     description='End-to-end Machine Learning Pipeline - MLE Assignment 2',
-    start_date=datetime(2023, 1, 1),
-    end_date=datetime(2024, 12, 1),
+    start_date=datetime(2022, 12, 1),
+    end_date=datetime(2024, 12, 31),
     schedule='@monthly',  # Run monthly
     catchup=True
 )
@@ -207,6 +208,6 @@ infer >> end_inference_pipeline
 end_inference_pipeline >> create_monitoring_directory >> start_monitoring_pipeline
 start_monitoring_pipeline >> results_monitoring >> end_monitoring_pipeline
 start_monitoring_pipeline >> psi_monitoring >> end_monitoring_pipeline
-start_monitoring_pipeline >> drift_monitoring >> end_monitoring_pipeline
+start_monitoring_pipeline >> drift_monitoring
 
 

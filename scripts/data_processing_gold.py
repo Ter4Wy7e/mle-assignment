@@ -8,6 +8,9 @@ import pyspark.sql.types as T
 
 from sklearn.model_selection import train_test_split
 
+# Create Logging Directory
+if not os.path.exists("/app/logs"):
+    os.makedirs("/app/logs")
 
 # Logger
 logger = logging.getLogger('data_pipeline')  # Set the logger name

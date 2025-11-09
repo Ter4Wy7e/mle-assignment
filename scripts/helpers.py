@@ -5,6 +5,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 
+# Create Logging Directory
+if not os.path.exists("/app/logs"):
+    os.makedirs("/app/logs")
 
 logger = logging.getLogger('ml_pipeline')  # Set the logger name
 handler = logging.FileHandler('/app/logs/helpers.log')

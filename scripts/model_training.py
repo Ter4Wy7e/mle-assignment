@@ -19,7 +19,10 @@ from sklearn import metrics
 
 import xgboost as xgb
 
-
+# Create Logging Directory
+if not os.path.exists("/app/logs"):
+    os.makedirs("/app/logs")
+    
 # Logger
 logger = logging.getLogger('training_pipeline')  # Set the logger name
 handler = logging.FileHandler('/app/logs/training.log')
@@ -632,16 +635,16 @@ def train_xgb(ti, **context):
     y = df_train_val_Y.values.ravel()
     scale_pos_weight = np.sum(y == 0) / np.sum(y == 1)
     param_distributions = {
-        'n_estimators': [10, 25, 50, 75, 100],
+        'n_estimators': [10, 25, 50, 75, 100, 150, 200],
         'scale_pos_weight': [scale_pos_weight, scale_pos_weight*2, scale_pos_weight*3, scale_pos_weight*0.7, scale_pos_weight*0.5],
         'max_depth': [2, 3, 5, 7, 9, 15, 20],  # lower max_depth to simplify the model
         'learning_rate': [0.01, 0.05, 0.1, 0.15, 0.2],
         'subsample': [0.6, 0.7, 0.8, 0.9, 1.0],
         'colsample_bytree': [0.6, 0.7, 0.8, 0.9, 1.0],
-        'gamma': [0, 0.1, 0.5, 1, 3, 5],
+        'gamma': [0, 0.1, 0.5, 1, 3, 5, 7, 9, 10],
         'min_child_weight': [1, 3, 5, 7, 9],
         'reg_alpha': [0, 0.1, 0.5, 0.7, 1],
-        'reg_lambda': [0.1, 0.5, 1, 1.5, 2, 5]
+        'reg_lambda': [0.1, 0.5, 1, 1.5, 2, 5, 7, 9, 10]
     }
     # Set up the random search with cross-validation
     xgb_clf_random_search = RandomizedSearchCV(

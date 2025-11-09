@@ -13,6 +13,9 @@ from sklearn.model_selection import train_test_split
 
 from scripts.encoder_functions import cap_outliers_enc, fill_nulls_enc
 
+# Create Logging Directory
+if not os.path.exists("/app/logs"):
+    os.makedirs("/app/logs")
 
 # Logger
 logger = logging.getLogger('inference_pipeline')  # Set the logger name
@@ -46,7 +49,70 @@ def deploy_model(ti, **context):
     pendulum.parse(current_date)
 
     # Active model selection
-    if pendulum.parse(current_date) >= pendulum.datetime(2024, 2, 1):
+    if pendulum.parse(current_date) >= pendulum.datetime(2024, 8, 1):
+        active_model = 'xgb_clf'
+        active_model_date = '2024-08-01'
+        active_model_version = '30dpd_6mob'
+        active_metric_p0 = 'recall'
+        active_threshold_p0 = 0.70
+        active_metric_p1 = 'f1'
+        active_threshold_p1 = 0.6
+        active_metric_p2 = 'gini'
+        active_threshold_p2 = 0.3
+        
+        active_model_filename = active_model + '_' + active_model_date + '_' + active_model_version + '.joblib'
+        encoder_payment_of_min_amount_enc_filename = 'encoder_payment_of_min_amount_enc_' + active_model_date + '_' + active_model_version + '_generic.joblib'
+        encoder_payment_behaviour_enc_filename = 'encoder_payment_behaviour_enc_' + active_model_date + '_' + active_model_version + '_generic.joblib'
+        encoder_outstanding_debt_scaler_filename = 'encoder_outstanding_debt_scaler_' + active_model_date + '_' + active_model_version + '_generic.joblib'
+        encoder_occupation_enc = 'encoder_occupation_enc_' + active_model_date + '_' + active_model_version + '_generic.joblib'
+        encoder_monthly_inhand_salary_scaler = 'encoder_monthly_inhand_salary_scaler_' + active_model_date + '_' + active_model_version + '_generic.joblib'
+        encoder_repayment_ability_scaler = 'encoder_repayment_ability_scaler_' + active_model_date + '_' + active_model_version + '_generic.joblib'
+        encoder_monthly_balance_scaler = 'encoder_monthly_balance_scaler_' + active_model_date + '_' + active_model_version + '_generic.joblib'
+        encoder_fill_nulls_values = 'encoder_fill_nulls_values_' + active_model_date + '_' + active_model_version + '_generic.joblib'
+        encoder_credit_mix_enc = 'encoder_credit_mix_enc_' + active_model_date + '_' + active_model_version + '_generic.joblib'
+        encoder_cap_outliers_values = 'encoder_cap_outliers_values_' + active_model_date + '_' + active_model_version + '_generic.joblib'
+        encoder_annual_income_scaler = 'encoder_annual_income_scaler_' + active_model_date + '_' + active_model_version + '_generic.joblib'
+        encoder_amount_invested_monthly_scaler = 'encoder_amount_invested_monthly_scaler_' + active_model_date + '_' + active_model_version + '_generic.joblib'
+
+        active_model_filepath = os.path.join(model_bank_directory, active_model_filename)
+        encoder_payment_of_min_amount_enc_filepath = os.path.join(model_bank_directory, encoder_payment_of_min_amount_enc_filename)
+        encoder_payment_behaviour_enc_filepath = os.path.join(model_bank_directory, encoder_payment_behaviour_enc_filename)
+        encoder_outstanding_debt_scaler_filepath = os.path.join(model_bank_directory, encoder_outstanding_debt_scaler_filename)
+        encoder_occupation_enc_filepath = os.path.join(model_bank_directory, encoder_occupation_enc)
+        encoder_monthly_inhand_salary_scaler_filepath = os.path.join(model_bank_directory, encoder_monthly_inhand_salary_scaler)
+        encoder_repayment_ability_scaler_filepath = os.path.join(model_bank_directory, encoder_repayment_ability_scaler)
+        encoder_monthly_balance_scaler_filepath = os.path.join(model_bank_directory, encoder_monthly_balance_scaler)
+        encoder_fill_nulls_values_filepath = os.path.join(model_bank_directory, encoder_fill_nulls_values)
+        encoder_credit_mix_enc_filepath = os.path.join(model_bank_directory, encoder_credit_mix_enc)
+        encoder_cap_outliers_values_filepath = os.path.join(model_bank_directory, encoder_cap_outliers_values)
+        encoder_annual_income_scaler_filepath = os.path.join(model_bank_directory, encoder_annual_income_scaler)
+        encoder_amount_invested_monthly_scaler_filepath = os.path.join(model_bank_directory, encoder_amount_invested_monthly_scaler)
+
+        ti.xcom_push(key='active_model', value=active_model)
+        ti.xcom_push(key='active_model_date', value=active_model_date)
+        ti.xcom_push(key='active_model_version', value=active_model_version)
+        ti.xcom_push(key='active_metric_p0', value=active_metric_p0)
+        ti.xcom_push(key='active_threshold_p0', value=active_threshold_p0)
+        ti.xcom_push(key='active_metric_p1', value=active_metric_p1)
+        ti.xcom_push(key='active_threshold_p1', value=active_threshold_p1)
+        ti.xcom_push(key='active_metric_p2', value=active_metric_p2)
+        ti.xcom_push(key='active_threshold_p2', value=active_threshold_p2)
+
+        ti.xcom_push(key='active_model_filepath', value=active_model_filepath)
+        ti.xcom_push(key='encoder_payment_of_min_amount_enc_filepath', value=encoder_payment_of_min_amount_enc_filepath)
+        ti.xcom_push(key='encoder_payment_behaviour_enc_filepath', value=encoder_payment_behaviour_enc_filepath)
+        ti.xcom_push(key='encoder_outstanding_debt_scaler_filepath', value=encoder_outstanding_debt_scaler_filepath)
+        ti.xcom_push(key='encoder_occupation_enc_filepath', value=encoder_occupation_enc_filepath)
+        ti.xcom_push(key='encoder_monthly_inhand_salary_scaler_filepath', value=encoder_monthly_inhand_salary_scaler_filepath)
+        ti.xcom_push(key='encoder_repayment_ability_scaler_filepath', value=encoder_repayment_ability_scaler_filepath)
+        ti.xcom_push(key='encoder_monthly_balance_scaler_filepath', value=encoder_monthly_balance_scaler_filepath)
+        ti.xcom_push(key='encoder_fill_nulls_values_filepath', value=encoder_fill_nulls_values_filepath)
+        ti.xcom_push(key='encoder_credit_mix_enc_filepath', value=encoder_credit_mix_enc_filepath)
+        ti.xcom_push(key='encoder_cap_outliers_values_filepath', value=encoder_cap_outliers_values_filepath)
+        ti.xcom_push(key='encoder_annual_income_scaler_filepath', value=encoder_annual_income_scaler_filepath)
+        ti.xcom_push(key='encoder_amount_invested_monthly_scaler_filepath', value=encoder_amount_invested_monthly_scaler_filepath)
+
+    elif pendulum.parse(current_date) >= pendulum.datetime(2024, 2, 1):
         active_model = 'xgb_clf'
         active_model_date = '2024-02-01'
         active_model_version = '30dpd_6mob'

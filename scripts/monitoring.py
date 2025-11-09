@@ -17,6 +17,10 @@ import pyspark.sql.types as T
 
 from scripts.helpers import PSIModelMonitor
 
+# Create Logging Directory
+if not os.path.exists("/app/logs"):
+    os.makedirs("/app/logs")
+
 # Logger
 logger = logging.getLogger('monitoring_pipeline')  # Set the logger name
 handler = logging.FileHandler('/app/logs/monitoring_pipeline.log')
@@ -167,29 +171,24 @@ def drift_monitoring(ti, **context):
     gini_score = 2*auc_score-1
 
     # Retrieve drift thresholds and alert if exceeded.
-    if pendulum.parse(current_date) >= pendulum.datetime(2023, 9, 1):
+    recall_threshold = ti.xcom_pull(task_ids='deploy_model', key='active_threshold_p0')
+    f1_threshold = ti.xcom_pull(task_ids='deploy_model', key='active_threshold_p1')
+    gini_threshold = ti.xcom_pull(task_ids='deploy_model', key='active_threshold_p2')
 
-        # lr_clf, 2023-09-01, 30dpd_6mob
-        recall_threshold = ti.xcom_pull(task_ids='deploy_model', key='active_threshold_p0')
-        f1_threshold = ti.xcom_pull(task_ids='deploy_model', key='active_threshold_p1')
-        gini_threshold = ti.xcom_pull(task_ids='deploy_model', key='active_threshold_p2')
-
-        if recall_score < recall_threshold:
-            logger.warning(f"[{ti.task_id} | {current_date}] Recall {recall_score} is below threshold {recall_threshold}.")
-        else:
-            logger.info(f"[{ti.task_id} | {current_date}] Recall: {recall_score}. Threshold: {recall_threshold}.")
-
-        if f1_score < f1_threshold:
-            logger.warning(f"[{ti.task_id} | {current_date}] Recall {f1_score} is below threshold {f1_threshold}.")
-        else:
-            logger.info(f"[{ti.task_id} | {current_date}] Recall: {f1_score}. Threshold: {f1_threshold}.")
-
-        if gini_score < gini_threshold:
-            logger.warning(f"[{ti.task_id} | {current_date}] Recall {gini_score} is below threshold {gini_threshold}.")
-        else:
-            logger.info(f"[{ti.task_id} | {current_date}] Recall: {gini_score}. Threshold: {gini_threshold}.")
+    if recall_score < recall_threshold:
+        logger.warning(f"[{ti.task_id} | {current_date}] Recall {recall_score} is below threshold {recall_threshold}.")
     else:
-        logger.warning(f"[{ti.task_id} | {current_date}] No drift metrics defined for this model.")
+        logger.info(f"[{ti.task_id} | {current_date}] Recall: {recall_score}. Threshold: {recall_threshold}.")
+
+    if f1_score < f1_threshold:
+        logger.warning(f"[{ti.task_id} | {current_date}] Recall {f1_score} is below threshold {f1_threshold}.")
+    else:
+        logger.info(f"[{ti.task_id} | {current_date}] Recall: {f1_score}. Threshold: {f1_threshold}.")
+
+    if gini_score < gini_threshold:
+        logger.warning(f"[{ti.task_id} | {current_date}] Recall {gini_score} is below threshold {gini_threshold}.")
+    else:
+        logger.info(f"[{ti.task_id} | {current_date}] Recall: {gini_score}. Threshold: {gini_threshold}.")
     
     # Save file record
 

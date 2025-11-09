@@ -1,15 +1,24 @@
 import os
 import logging
 
+# Create Logging Directory
+if not os.path.exists("/app/logs"):
+    os.makedirs("/app/logs")
 
 # Logger
 logger = logging.getLogger('data_pipeline')  # Set the logger name
-handler = logging.FileHandler('/app/data_pipeline.log')
+handler = logging.FileHandler('/app/logs/data_pipeline.log')
 formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 logger.setLevel(logging.INFO)
 
+logger_train = logging.getLogger('training_pipeline')  # Set the logger name
+handler_train = logging.FileHandler('/app/logs/training.log')
+formatter_train = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+handler_train.setFormatter(formatter_train)
+logger_train.addHandler(handler_train)
+logger_train.setLevel(logging.INFO)
 
 # Data Store Configurations
 datamart_directory = "/app/datamart"
@@ -101,7 +110,7 @@ def create_model_bank(ti, **context):
     current_date = context['ds']
     if not os.path.exists(model_bank_directory):
         os.makedirs(model_bank_directory)
-        logger.info(f"[{ti.task_id} | {current_date}] Created model bank directory: {model_bank_directory}")
+        logger_train.info(f"[{ti.task_id} | {current_date}] Created model bank directory: {model_bank_directory}")
     else:
-        logger.info(f"[{ti.task_id} | {current_date}] Model bank directory already exists: {model_bank_directory}")
+        logger_train.info(f"[{ti.task_id} | {current_date}] Model bank directory already exists: {model_bank_directory}")
     ti.xcom_push(key='model_bank_directory', value=model_bank_directory)

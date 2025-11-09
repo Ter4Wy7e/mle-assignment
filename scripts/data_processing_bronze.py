@@ -7,6 +7,10 @@ import pyspark.sql.types as T
 
 
 # Logger
+# Create Logging Directory
+if not os.path.exists("/app/logs"):
+    os.makedirs("/app/logs")
+
 logger = logging.getLogger('data_pipeline')  # Set the logger name
 handler = logging.FileHandler('/app/logs/data_pipeline.log')
 formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")

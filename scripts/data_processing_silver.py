@@ -8,6 +8,9 @@ from pyspark.sql import SparkSession
 import pyspark.sql.functions as F
 import pyspark.sql.types as T
 
+# Create Logging Directory
+if not os.path.exists("/app/logs"):
+    os.makedirs("/app/logs")
 
 # Logger
 logger = logging.getLogger('data_pipeline')  # Set the logger name

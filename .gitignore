@@ -1,3 +1,6 @@
 datamart/
+model_bank/
+outbox/
+monitoring/
 spark-warehouse/
-backup/
+logs/
