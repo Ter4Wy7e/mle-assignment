@@ -591,6 +591,7 @@ def train_logistic_regression(ti, **context):
     plt.title('Training Results for Logistic Regression')
     plt.xticks(rotation=45)
     plt.legend()
+    plt.tight_layout()
     plt.savefig(os.path.join(model_bank_directory, 'training_results_lr_' + current_date + '.png'))  # Save the image
     plt.close()
 
@@ -750,6 +751,7 @@ def train_xgb(ti, **context):
     plt.title('Training Results for XGBoost')
     plt.xticks(rotation=45)
     plt.legend()
+    plt.tight_layout()
     plt.savefig(os.path.join(model_bank_directory, 'training_results_xbg_' + current_date + '.png')) 
 
     df_results_lr = df_results[df_results['model_type'] == 'Logistic Regression']
@@ -767,6 +769,7 @@ def train_xgb(ti, **context):
     plt.title('Comparison of Training Results')
     plt.xticks(rotation=45)
     plt.legend()
+    plt.tight_layout()
     plt.savefig(os.path.join(model_bank_directory, 'training_results_comparison_' + current_date + '.png'))  # Save the image
     plt.close()
 

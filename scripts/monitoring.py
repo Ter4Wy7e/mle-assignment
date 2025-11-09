@@ -114,6 +114,7 @@ def results_monitoring(ti, **context):
     plt.title('Sudden Result Drift Monitoring')
     plt.xticks(rotation=45)
     plt.legend()
+    plt.tight_layout()
 
     plt.savefig(results_png_filepath)  # Save the image
     plt.close()
@@ -246,6 +247,7 @@ def drift_monitoring(ti, **context):
     plt.title('Concept Drift Monitoring')
     plt.xticks(rotation=45)
     plt.legend()
+    plt.tight_layout()
     plt.savefig(drift_png_filepath)  # Save the image
     plt.close()
 
@@ -270,10 +272,33 @@ def psi_monitoring(ti, **context):
     psi_monitoring_records_fig = 'psi_monitoring_records_' + current_date + '.png'
     filepath_txt = os.path.join(monitoring_directory, psi_monitoring_records_txt)
     filepath_fig = os.path.join(monitoring_directory, psi_monitoring_records_fig)
-    
-    
-    if pendulum.parse(current_date) >= pendulum.datetime(2023, 9, 1):
 
+    if pendulum.parse(current_date) >= pendulum.datetime(2024, 8, 1):
+        # xgb_clf, 2024-08-01, 30dpd_6mob
+        training_filepath_X = XCom.get_one(execution_date=pendulum.datetime(2024,8,1), task_id="training_preprocessing", key="gold_training_view_X_filepath")
+        validation_filepath_X = XCom.get_one(execution_date=pendulum.datetime(2024,8,1), task_id="training_preprocessing", key="gold_validation_view_X_filepath")
+        df_train_X = pd.read_parquet(training_filepath_X)
+        df_val_X = pd.read_parquet(validation_filepath_X)
+        df_train = pd.concat([df_train_X, df_val_X], axis=0, ignore_index=True)
+
+    elif pendulum.parse(current_date) >= pendulum.datetime(2024, 2, 1):
+        # xgb_clf, 2024-02-01, 30dpd_6mob
+        training_filepath_X = XCom.get_one(execution_date=pendulum.datetime(2024,2,1), task_id="training_preprocessing", key="gold_training_view_X_filepath")
+        validation_filepath_X = XCom.get_one(execution_date=pendulum.datetime(2024,2,1), task_id="training_preprocessing", key="gold_validation_view_X_filepath")
+        df_train_X = pd.read_parquet(training_filepath_X)
+        df_val_X = pd.read_parquet(validation_filepath_X)
+        df_train = pd.concat([df_train_X, df_val_X], axis=0, ignore_index=True)
+
+    elif pendulum.parse(current_date) >= pendulum.datetime(2023, 12, 1):
+        # xgb_clf, 2023-12-01, 30dpd_6mob
+        training_filepath_X = XCom.get_one(execution_date=pendulum.datetime(2023,12,1), task_id="training_preprocessing", key="gold_training_view_X_filepath")
+        validation_filepath_X = XCom.get_one(execution_date=pendulum.datetime(2023,12,1), task_id="training_preprocessing", key="gold_validation_view_X_filepath")
+        df_train_X = pd.read_parquet(training_filepath_X)
+        df_val_X = pd.read_parquet(validation_filepath_X)
+        df_train = pd.concat([df_train_X, df_val_X], axis=0, ignore_index=True)
+
+
+    elif pendulum.parse(current_date) >= pendulum.datetime(2023, 9, 1):
         # lr_clf, 2023-09-01, 30dpd_6mob
         training_filepath_X = XCom.get_one(execution_date=pendulum.datetime(2023,9,1), task_id="training_preprocessing", key="gold_training_view_X_filepath")
         validation_filepath_X = XCom.get_one(execution_date=pendulum.datetime(2023,9,1), task_id="training_preprocessing", key="gold_validation_view_X_filepath")
